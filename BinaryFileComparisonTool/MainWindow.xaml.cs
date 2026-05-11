@@ -27,11 +27,11 @@ namespace BinaryFileComparisonTool
                      select file).ToArray();
                 if (binFiles.Length == 0)
                 {
-                    MessageBox.Show("Uniquement les .bin sont acceptés.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Uniquement les .bin sont acceptés.", "Mauvaise extension de fichier", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 else if (binFiles.Length < 2)
                 {
-                    MessageBox.Show("Deux fichiers .bin minimum sont requis pour la comparaison.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show("Deux fichiers .bin minimum sont requis pour la comparaison.", "Un seul fichier sélectionné", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 // Vide la liste précédente et stocke les nouveaux fichiers
                 else
@@ -48,10 +48,6 @@ namespace BinaryFileComparisonTool
                         DropTextBlock.Text += $"{Path.GetFileName(file)}\n";
                     }
                 }
-            }
-            else
-            {
-                MessageBox.Show("Uniquement les .bin sont acceptés.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 

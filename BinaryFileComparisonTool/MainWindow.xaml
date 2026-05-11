@@ -12,7 +12,7 @@
         <Rectangle HorizontalAlignment="Left" Height="31" Margin="38,30,0,0" Stroke="Black" VerticalAlignment="Top" Width="180"/>
         <TextBlock HorizontalAlignment="Left" Height="18" Margin="38,37,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="180" FontFamily="Cascadia Code SemiBold" FontSize="14" TextAlignment="Center"><Run Language="fr-fr" Text="Comparateur de .bin"/></TextBlock>
         <Border BorderBrush="Black" Background="Transparent" BorderThickness="1" HorizontalAlignment="Center" Height="311" Margin="0,83,0,0" VerticalAlignment="Top" Width="724" AllowDrop="True" DragOver="Border_DragOver" Drop="Border_Drop">
-            <TextBlock x:Name="DropTextBlock" HorizontalAlignment="Center" Height="259" VerticalAlignment="Center" Width="724" FontFamily="Cascadia Code SemiLight" TextAlignment="Center" FontSize="16" TextWrapping="Wrap" Text="Glisser/déposer les .bin à comparer" Foreground="#FF828080" IsHitTestVisible="False"/>
+            <TextBlock x:Name="DropTextBlock" HorizontalAlignment="Center" Height="259" VerticalAlignment="Center" Width="724" FontFamily="Cascadia Code SemiLight" TextAlignment="Center" FontSize="16" TextWrapping="Wrap" Text="Glisser/déposer au moins deux fichiers .bin à comparer" Foreground="#FF828080" IsHitTestVisible="False"/>
         </Border>
 
     </Grid>
