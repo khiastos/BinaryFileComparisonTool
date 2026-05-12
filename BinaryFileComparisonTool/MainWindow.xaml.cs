@@ -99,7 +99,7 @@ namespace BinaryFileComparisonTool
                     }
                 }
                 // Initialisation + ouverture de la fenêtre de conflit
-                new ConflictWindow(adresswithValue, _loadedFiles).ShowDialog();
+                new CompareWindow(adresswithValue, _loadedFiles, allBytes).ShowDialog();
             }
         }
     }
