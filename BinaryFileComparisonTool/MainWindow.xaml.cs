@@ -11,42 +11,42 @@ namespace BinaryFileComparisonTool
             InitializeComponent();
         }
 
-        // Drop = traite les fichiers déposés et vérifie si c'est bien des .bin
         private void Border_Drop(object sender, DragEventArgs e)
         {
-            // GetDataPresent vérifie si les données sont des fichiers (FileDrop) avant de les traiter
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
-                // Cast des données en tableau de chaînes (string[]) pour obtenir les chemins des fichiers déposés
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-                string[] binFiles =
-                    (from file in files
-                     where String.Equals(Path.GetExtension(file), ".bin", StringComparison.OrdinalIgnoreCase)
-                     // ToArray() convertit le résultat de la requête LINQ en un tableau de chaînes (string[])
-                     select file).ToArray();
-                if (binFiles.Length == 0)
+                List<string> binFiles = new List<string>();
+
+                for (int i = 0; i < files.Length; i++)
                 {
-                    MessageBox.Show("Uniquement les .bin sont acceptés.", "Mauvaise extension de fichier", MessageBoxButton.OK, MessageBoxImage.Error);
+                    if (String.Equals(Path.GetExtension(files[i]), ".bin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        binFiles.Add(files[i]);
+                    }
+                    else
+                    {
+                        MessageBox.Show("Uniquement les .bin sont acceptés.", "Mauvaise extension de fichier", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
                 }
-                else if (binFiles.Length < 2)
+
+                if (binFiles.Count >= 3)
                 {
-                    MessageBox.Show("Deux fichiers .bin minimum sont requis pour la comparaison.", "Un seul fichier sélectionné", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                // Vide la liste précédente et stocke les nouveaux fichiers
-                else
-                {
-                    _loadedFiles.Clear();
                     _loadedFiles.AddRange(binFiles);
-                    // Supprime le contenu précédent de la TextBox avant d'afficher les nouveaux fichiers chargés
-                    DropTextBlock.Text = "";
-                    DropTextBlock.Text += $"Fichiers chargés : \n";
+                    DropTextBlock.Text = string.Empty;
+                    DropTextBlock.Text += "Fichier chargés : \n";
                     CompareButton.IsEnabled = true;
 
                     foreach (string file in binFiles)
                     {
-                        // Path.GetFileName(file) extrait le nom du fichier à partir de son chemin complet, et l'ajoute à la TextBox pour affichage
                         DropTextBlock.Text += $"{Path.GetFileName(file)}\n";
                     }
+                }
+                else
+                {
+                    MessageBox.Show("Trois fichiers .bin minimum sont requis pour la comparaison.", "Un seul fichier sélectionné", MessageBoxButton.OK, MessageBoxImage.Error);
+                    _loadedFiles.Clear();
                 }
             }
         }
@@ -70,12 +70,12 @@ namespace BinaryFileComparisonTool
         // Logique de comparaison des fichiers .bin
         private async void Button_OnClick(object sender, RoutedEventArgs e)
         {
-
             Dictionary<int, byte[]> adresswithValue = new Dictionary<int, byte[]>();
             // Stocke chaque chemin de fichier en Task<byte[]>
             var fileReadTasks = _loadedFiles.Select(f => File.ReadAllBytesAsync(f));
             // Permet de lire le contenu de chaque fichier, stocke le résultat dans un tableau de tableaux de bytes (byte[][]) en gros un tableau qui stocke les données de chaque fichier
             byte[][] allBytes = await Task.WhenAll(fileReadTasks);
+
 
             /* Vérifie si tous les fichiers ont la même taille en comparant la longueur de chaque tableau de bytes
             Select = donne chaque taille de chaque fichier, Distinct = regroupe les tailles uniques, Count = compte le nombre de tailles uniques
@@ -86,21 +86,33 @@ namespace BinaryFileComparisonTool
                 MessageBox.Show("Les fichiers n'ont pas la même taille, impossible de les comparer.", "Taille différente des .bin", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
-            else
+
+            // Récupère la taille totale du contenu
+            int contentLength = allBytes[0].Length;
+
+            // On itère jusqu'à atteindre la fin de la taille du contenu
+            for (int i = 0; i < contentLength; i++)
             {
-                // Vérifie chacun des octets dans chaque .bin
-                for (int i = 0; i < allBytes[0].Length; i++)
+                // Lors d'une nouvelle itération, on prépare à l'avance un tableau pour relier chaque valeur de chaque adresse mémoire pour tous les fichiers
+                byte[] allContentForCurrentIndex = new byte[allBytes.Length];
+
+                // On itère le nombre de fois correspondant au nombre de fichiers
+                for (int j = 0; j < allBytes.Length; j++)
                 {
-                    // Si une valeur est différente dans la même adresse
-                    if (allBytes[1][i] != allBytes[0][i] && (allBytes[0][i] != 0xFF && allBytes[1][i] != 0xFF))
-                    {
-                        // Alors l'ajouter dans le dictionnaire
-                        adresswithValue.Add(i, new byte[] { allBytes[0][i], allBytes[1][i] });
-                    }
+                    // On récupère tout le contenu du fichier sur lequel on itère
+                    byte[] dump = allBytes[j];
+                    allContentForCurrentIndex[j] = dump[i];
                 }
-                // Initialisation + ouverture de la fenêtre de conflit
-                new CompareWindow(adresswithValue, _loadedFiles, allBytes).ShowDialog();
+
+                // On vérifie si il y a au moins un élément du tableau qui a une valeur, si c'est le cas alors on l'ajoute dans le dictionnaire 
+                if (allContentForCurrentIndex.Distinct().Count() > 1)
+                {
+                    adresswithValue.Add(i, allContentForCurrentIndex);
+                }
             }
+
+            // Initialisation + ouverture de la fenêtre de conflit
+            new CompareWindow(adresswithValue, _loadedFiles, allBytes).ShowDialog();
         }
     }
 }

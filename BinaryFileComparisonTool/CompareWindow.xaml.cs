@@ -17,6 +17,8 @@ namespace BinaryFileComparisonTool
             _allBytes = allBytes;
             InitializeComponent();
 
+            ErrorNumber.Text = "Nombre de conflits : " + _adresswithValue.Count;
+
             // Liste qui stocke les adresses des conflits
             List<dynamic> conflitEntries = new List<dynamic>();
 
@@ -107,8 +109,8 @@ namespace BinaryFileComparisonTool
             else
             {
                 MessageBox.Show("Enregistrement annulé. Le fichier fusionné n'a pas été créé.", "Enregistrement annulé", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
             }
         }
+
     }
 }
