@@ -1,97 +1,75 @@
-﻿using System.Dynamic;
-using System.IO;
+﻿using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
 using Microsoft.Win32;
 
 namespace BinaryFileComparisonTool
 {
     public partial class CompareWindow : Window
     {
-        private Dictionary<int, byte[]> _adresswithValue;
+        private Dictionary<int, byte[]> _conflicts;
         private List<string> _binFileNames;
         private byte[][] _allBytes;
-        public CompareWindow(Dictionary<int, byte[]> adresswithValue, List<string> binFileNames, byte[][] allBytes)
+        public CompareWindow(Dictionary<int, byte[]> conflicts, List<string> binFileNames, byte[][] allBytes)
         {
-            _adresswithValue = adresswithValue;
+            _conflicts = conflicts;
             _binFileNames = binFileNames;
             _allBytes = allBytes;
             InitializeComponent();
 
-            ErrorNumber.Text = "Nombre de conflits : " + _adresswithValue.Count;
+            ErrorNumber.Text = "Nombre de conflits : " + _conflicts.Count;
 
-            // Liste qui stocke les adresses des conflits
-            List<dynamic> conflitEntries = new List<dynamic>();
-
-            // Pour chaque entrée dans le dictionnaire contenant les adresses et les valeurs différentes
-            foreach (var entry in _adresswithValue)
+            // Création de la colonne "Adresse"
+            ComparaisonResume.Columns.Add(new DataGridTextColumn
             {
-                // Créer un objet dynamique pour stocker l'adresse et les valeurs des conflits
-                dynamic row = new ExpandoObject();
-                // Cast l'objet dynamique en dictionnaire pour pouvoir ajouter des propriétés dynamiques
-                var dict = (IDictionary<string, object>)row;
-
-                // Ajouter l'adresse du conflit à l'objet dynamique
-                dict["Adress"] = $"0x{entry.Key:X8}";
-
-                for (int i = 0; i < entry.Value.Length; i++)
+                Header = "Adresse",
+                Binding = new Binding("Key")
                 {
-                    // Ajouter les valeurs des conflits pour chaque fichier à l'objet dynamique
-                    dict[Path.GetFileNameWithoutExtension(_binFileNames[i])] = $"0x{entry.Value[i]:X2}";
+                    StringFormat = "0x{0:X8}"
                 }
+            });
 
-                // Ajouter l'objet dynamique à la liste des entrées de conflit
-                conflitEntries.Add(row);
-            }
 
-            foreach (var file in _binFileNames)
+            // Création de la colonne "Valeur"
+            for (int i = 0; i < _binFileNames.Count; i++)
             {
-                // Ajouter une colonne pour chaque fichier dans le DataGrid
-                ComparaisonResume.Columns.Add(new System.Windows.Controls.DataGridTextColumn
+                string file = _binFileNames[i];
+                ComparaisonResume.Columns.Add(new DataGridTextColumn
                 {
-                    // Header = nom du fichier, Binding = liaison de données pour afficher les valeurs des conflits pour chaque fichier
                     Header = Path.GetFileNameWithoutExtension(file),
-                    Binding = new System.Windows.Data.Binding(Path.GetFileNameWithoutExtension(file))
+                    Binding = new Binding($"Value[{i}]")
+                    {
+                        StringFormat = "0x{0:X2}"
+                    }
                 });
             }
 
             // Lier la liste des entrées de conflit à l'interface utilisateur pour afficher les adresses des conflits
-            ComparaisonResume.ItemsSource = conflitEntries;
+            ComparaisonResume.ItemsSource = _conflicts;
         }
 
         public void Merge_OnClick(object sender, RoutedEventArgs e)
         {
-            // Permet de fusionner les fichiers .bin en utilisant les valeurs des conflits pour créer un nouveau fichier fusionné
-            byte[] mergedBytes = new byte[_allBytes[0].Length];
-            Dictionary<int, byte[]> mergedConflicts = new Dictionary<int, byte[]>();
+            byte[] mergedBytes = _allBytes[0];
 
-            // Pour chaque position dans les fichiers .bin, comparer les valeurs des conflits et choisir une valeur pour le fichier fusionné
-            for (int i = 0; i < mergedBytes.Length; i++)
+            foreach (KeyValuePair<int, byte[]> conflict in _conflicts)
             {
-                Dictionary<byte, int> counts = new Dictionary<byte, int>();
+                Dictionary<byte, int> countsValue = new Dictionary<byte, int>();
 
-                // Compter le nombre d'occurrences de chaque valeur à la position i dans les fichiers .bin
-                for (int j = 0; j < _allBytes.Length; j++)
+                foreach (byte value in conflict.Value)
                 {
-                    byte value = _allBytes[j][i];
-                    if (!counts.ContainsKey(value))
+                    if (countsValue.ContainsKey(value))
                     {
-                        counts[value] = 0;
+                        countsValue[value]++;
                     }
-                    counts[value]++;
+                    else
+                    {
+                        countsValue.Add(value, 1);
+                    }
                 }
 
-                // Choisir la valeur la plus fréquente à la position i pour le fichier fusionné
-                byte mostFrequentValue = counts.OrderByDescending(kv => kv.Value).First().Key;
-
-                if (counts[mostFrequentValue] > _allBytes.Length / 2)
-                {
-                    mergedBytes[i] = mostFrequentValue;
-                }
-                else
-                {
-                    // Stocker les conflits pour cette adresse dans un dictionnaire
-                    mergedConflicts[i] = _allBytes.Select(bytes => bytes[i]).ToArray();
-                }
+                mergedBytes[conflict.Key] = countsValue.OrderByDescending(pair => pair.Value).First().Key;
             }
 
             // Enregistrer le fichier fusionné
@@ -111,6 +89,7 @@ namespace BinaryFileComparisonTool
                 MessageBox.Show("Enregistrement annulé. Le fichier fusionné n'a pas été créé.", "Enregistrement annulé", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
+
 
     }
 }
