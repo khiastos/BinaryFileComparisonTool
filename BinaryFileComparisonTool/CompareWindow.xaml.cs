@@ -69,7 +69,10 @@ namespace BinaryFileComparisonTool
                     }
                 }
 
-                mergedBytes[conflict.Key] = countsValue.OrderByDescending(pair => pair.Value).First().Key;
+                mergedBytes[conflict.Key] = countsValue
+                    .Where(unprogrammedByte => unprogrammedByte.Key != 0xFF)
+                    .OrderByDescending(pair => pair.Value)
+                    .First().Key;
             }
 
             // Enregistrer le fichier fusionné
